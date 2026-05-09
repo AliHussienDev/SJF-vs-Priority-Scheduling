@@ -86,7 +86,7 @@ Open any file in the `screenshots/` folder to view pre-calculated results withou
 ## How to Use
 1. **Add Processes:** Enter Process ID, Arrival Time, Burst Time, and Priority (1–10). Click **+ Add**.
 2. **Load Scenarios:** Click scenario buttons (A, B, C, or D) to load built-in data.
-3. **Simulate:** Click the **▶ Run Simulation** button.
+3. **Simulate:** Click the **Run Simulation** button.
 4. **View Results:** Check the charts, tables, and the final conclusion.
 5. **Reset:** Click **Clear All** to start over.
 
@@ -109,10 +109,10 @@ Open any file in the `screenshots/` folder to view pre-calculated results withou
 
 | Feature | SJF (Preemptive) | SJF (Non-Preemptive) | Priority (Preemptive) |
 |---------|:---:|:---:|:---:|
-| **Preemptive?** | ✅ Yes | ❌ No | ✅ Yes |
-| **Efficiency (Avg WT)** | ✅ Optimal | ⚠️ High | ❌ Varies |
-| **Context Switches** | 🔴 High | 🟢 Low | 🔴 High |
-| **Starvation Risk** | ⚠️ Long Jobs | ⚠️ Long Jobs | 🔴 Low Priority |
+| **Preemptive?** | Yes | No | Yes |
+| **Efficiency (Avg WT)** | Optimal | High | Varies |
+| **Context Switches** | High | Low | High |
+| **Starvation Risk** | Long Jobs | Long Jobs | Low Priority |
 | **Best Use Case** | High Throughput | Low Overhead | Urgent Tasks |
 
 ---
