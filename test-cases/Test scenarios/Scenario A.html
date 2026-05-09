@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scenario A - Basic Mixed Workload</title>
+
+  <link rel="stylesheet" href="../../src/css/style.css">
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>CPU Scheduling Simulator — C4</h1>
+    <p>Scenario A: Basic Mixed Workload Comparison</p>
+  </div>
+  <span class="badge">OS Project</span>
+</div>
+
+<div class="container">
+
+
+  <div class="card">
+    <div class="card-header">
+      <div class="section-icon icon-blue">1</div>
+      <h2>Input Panel</h2>
+    </div>
+
+    <div class="priority-note">
+      Priority Rule: <strong>Lower number = Higher priority</strong> &nbsp;|&nbsp;
+      SJF(Pre) &amp; Priority are <strong>Preemptive</strong>; SJF(NP) is <strong>Non-Preemptive</strong> &nbsp;|&nbsp;
+      Tie-breaking: <strong>Arrival Time first, then Process ID</strong>
+    </div>
+
+    <div id="validation-error" class="alert alert-success">Loaded Scenario A: Basic Mixed Workload</div>
+
+    <div style="display:grid; grid-template-columns: repeat(5,1fr) auto; gap:0.75rem; align-items:end;">
+      <div>
+        <label>Process ID</label>
+        <input type="text" id="inp-pid" placeholder="e.g. P1" maxlength="5">
+        <div class="error-msg" id="err-pid">Required / Duplicate ID</div>
+      </div>
+      <div>
+        <label>Arrival Time</label>
+        <input type="number" id="inp-at" placeholder="0" min="0">
+        <div class="error-msg" id="err-at">Must be ≥ 0</div>
+      </div>
+      <div>
+        <label>Burst Time</label>
+        <input type="number" id="inp-bt" placeholder="1" min="1">
+        <div class="error-msg" id="err-bt">Must be ≥ 1</div>
+      </div>
+      <div>
+        <label>Priority (1=highest)</label>
+        <input type="number" id="inp-pr" placeholder="1" min="1" max="10">
+        <div class="error-msg" id="err-pr">Must be 1–10</div>
+      </div>
+      <div>
+        <label>Color</label>
+        <select id="inp-color">
+          <option value="0">Auto</option>
+          <option value="1">Blue</option>
+          <option value="2">Red</option>
+          <option value="3">Amber</option>
+          <option value="4">Green</option>
+          <option value="5">Purple</option>
+          <option value="6">Pink</option>
+          <option value="7">Cyan</option>
+          <option value="8">Lime</option>
+        </select>
+      </div>
+      <div>
+        <button class="btn btn-primary" onclick="addProcess()">+ Add</button>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-warning" onclick="loadScenario('A')">Scenario A: Basic</button>
+      <button class="btn btn-warning" onclick="loadScenario('B')">Scenario B: Urgency vs. Eff.</button>
+      <button class="btn btn-warning" onclick="loadScenario('C')">Scenario C: Tie-Breaking</button>
+      <button class="btn btn-warning" onclick="loadScenario('D')">Scenario D: Validation Test</button>
+      <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <div class="card-header">
+      <div class="section-icon icon-orange">2</div>
+      <h2>Process Table</h2>
+      <span style="margin-left:auto; font-size:0.8rem; color:var(--text-muted)" id="process-count">5 processes</span>
+    </div>
+    <div id="no-processes" class="alert alert-info hidden">No processes added yet. Use the input panel above or load a scenario.</div>
+    <div id="table-wrap" class="">
+      <table class="process-table">
+        <thead>
+          <tr>
+            <th>PID</th><th>Arrival</th><th>Burst</th><th>Priority</th><th>Remove</th>
+          </tr>
+        </thead>
+        <tbody id="process-tbody"><tr><td><span class="pid-badge" style="background:#3b82f6">P1</span></td><td>0</td><td>6</td><td><strong>3</strong></td><td><button class="del-btn" onclick="removeProcess(0)">✕</button></td></tr><tr><td><span class="pid-badge" style="background:#ef4444">P2</span></td><td>1</td><td>4</td><td><strong>1</strong></td><td><button class="del-btn" onclick="removeProcess(1)">✕</button></td></tr><tr><td><span class="pid-badge" style="background:#f59e0b">P3</span></td><td>2</td><td>8</td><td><strong>4</strong></td><td><button class="del-btn" onclick="removeProcess(2)">✕</button></td></tr><tr><td><span class="pid-badge" style="background:#10b981">P4</span></td><td>3</td><td>2</td><td><strong>2</strong></td><td><button class="del-btn" onclick="removeProcess(3)">✕</button></td></tr><tr><td><span class="pid-badge" style="background:#8b5cf6">P5</span></td><td>4</td><td>5</td><td><strong>5</strong></td><td><button class="del-btn" onclick="removeProcess(4)">✕</button></td></tr></tbody>
+      </table>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="runSimulation()" style="font-size:1rem; padding:0.65rem 2rem;">
+          ▶ Run Simulation
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="results-section" class="">
+
+
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-teal">3</div>
+        <h2>Gantt Chart — <span class="algo-sjf">SJF (Preemptive / SRTF)</span></h2>
+      </div>
+      <div class="gantt-wrap">
+        <div class="gantt-container" id="gantt-sjf" style="width:900px"><div class="gantt-block" title="P1: 0 → 1" style="left:0.00%;width:calc(4.00% - 2px);background:#3b82f6">P1</div><div class="gantt-block" title="P2: 1 → 5" style="left:4.00%;width:calc(16.00% - 2px);background:#ef4444">P2</div><div class="gantt-block" title="P4: 5 → 7" style="left:20.00%;width:calc(8.00% - 2px);background:#10b981">P4</div><div class="gantt-block" title="P1: 7 → 12" style="left:28.00%;width:calc(20.00% - 2px);background:#3b82f6">P1</div><div class="gantt-block" title="P5: 12 → 17" style="left:48.00%;width:calc(20.00% - 2px);background:#8b5cf6">P5</div><div class="gantt-block" title="P3: 17 → 25" style="left:68.00%;width:calc(32.00% - 2px);background:#f59e0b">P3</div></div>
+        <div class="gantt-times" id="times-sjf" style="width:900px"><div class="gantt-time-label" style="left:0.00%">0</div><div class="gantt-time-label" style="left:4.00%">1</div><div class="gantt-time-label" style="left:20.00%">5</div><div class="gantt-time-label" style="left:28.00%">7</div><div class="gantt-time-label" style="left:48.00%">12</div><div class="gantt-time-label" style="left:68.00%">17</div><div class="gantt-time-label" style="left:100.00%">25</div></div>
+      </div>
+      <div style="margin-top:0.75rem;">
+        <span style="font-size:0.8rem; color:var(--text-secondary); font-weight:600;">Execution order:</span>
+        <div class="ready-queue" id="exec-order-sjf"><span class="queue-item" style="background:#3b82f6">P1</span><span class="queue-item" style="background:#ef4444">P2</span><span class="queue-item" style="background:#10b981">P4</span><span class="queue-item" style="background:#8b5cf6">P5</span><span class="queue-item" style="background:#f59e0b">P3</span></div>
+      </div>
+    </div>
+
+    
+
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-blue">3b</div>
+        <h2>Gantt Chart — <span class="algo-sjf-np">SJF (Non-Preemptive)</span></h2>
+      </div>
+      <div class="gantt-wrap">
+        <div class="gantt-container" id="gantt-sjf-np" style="width:900px"><div class="gantt-block" title="P1: 0 → 6" style="left:0.00%;width:calc(24.00% - 2px);background:#3b82f6">P1</div><div class="gantt-block" title="P4: 6 → 8" style="left:24.00%;width:calc(8.00% - 2px);background:#10b981">P4</div><div class="gantt-block" title="P2: 8 → 12" style="left:32.00%;width:calc(16.00% - 2px);background:#ef4444">P2</div><div class="gantt-block" title="P5: 12 → 17" style="left:48.00%;width:calc(20.00% - 2px);background:#8b5cf6">P5</div><div class="gantt-block" title="P3: 17 → 25" style="left:68.00%;width:calc(32.00% - 2px);background:#f59e0b">P3</div></div>
+        <div class="gantt-times" id="times-sjf-np" style="width:900px"><div class="gantt-time-label" style="left:0.00%">0</div><div class="gantt-time-label" style="left:24.00%">6</div><div class="gantt-time-label" style="left:32.00%">8</div><div class="gantt-time-label" style="left:48.00%">12</div><div class="gantt-time-label" style="left:68.00%">17</div><div class="gantt-time-label" style="left:100.00%">25</div></div>
+      </div>
+      <div style="margin-top:0.75rem;">
+        <span style="font-size:0.8rem; color:var(--text-secondary); font-weight:600;">Execution order:</span>
+        <div class="ready-queue" id="exec-order-sjf-np"><span class="queue-item" style="background:#3b82f6">P1</span><span class="queue-item" style="background:#10b981">P4</span><span class="queue-item" style="background:#ef4444">P2</span><span class="queue-item" style="background:#8b5cf6">P5</span><span class="queue-item" style="background:#f59e0b">P3</span></div>
+      </div>
+    </div>
+
+
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-purple">4</div>
+        <h2>Gantt Chart — <span class="algo-pri">Priority Scheduling (Preemptive)</span></h2>
+      </div>
+      <div class="gantt-wrap">
+        <div class="gantt-container" id="gantt-pri" style="width:900px"><div class="gantt-block" title="P1: 0 → 1" style="left:0.00%;width:calc(4.00% - 2px);background:#3b82f6">P1</div><div class="gantt-block" title="P2: 1 → 5" style="left:4.00%;width:calc(16.00% - 2px);background:#ef4444">P2</div><div class="gantt-block" title="P4: 5 → 7" style="left:20.00%;width:calc(8.00% - 2px);background:#10b981">P4</div><div class="gantt-block" title="P1: 7 → 12" style="left:28.00%;width:calc(20.00% - 2px);background:#3b82f6">P1</div><div class="gantt-block" title="P3: 12 → 20" style="left:48.00%;width:calc(32.00% - 2px);background:#f59e0b">P3</div><div class="gantt-block" title="P5: 20 → 25" style="left:80.00%;width:calc(20.00% - 2px);background:#8b5cf6">P5</div></div>
+        <div class="gantt-times" id="times-pri" style="width:900px"><div class="gantt-time-label" style="left:0.00%">0</div><div class="gantt-time-label" style="left:4.00%">1</div><div class="gantt-time-label" style="left:20.00%">5</div><div class="gantt-time-label" style="left:28.00%">7</div><div class="gantt-time-label" style="left:48.00%">12</div><div class="gantt-time-label" style="left:80.00%">20</div><div class="gantt-time-label" style="left:100.00%">25</div></div>
+      </div>
+      <div style="margin-top:0.75rem;">
+        <span style="font-size:0.8rem; color:var(--text-secondary); font-weight:600;">Execution order:</span>
+        <div class="ready-queue" id="exec-order-pri"><span class="queue-item" style="background:#3b82f6">P1</span><span class="queue-item" style="background:#ef4444">P2</span><span class="queue-item" style="background:#10b981">P4</span><span class="queue-item" style="background:#f59e0b">P3</span><span class="queue-item" style="background:#8b5cf6">P5</span></div>
+      </div>
+    </div>
+
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-header">
+          <div class="section-icon icon-teal">5</div>
+          <h2>Results — <span class="algo-sjf">SJF</span></h2>
+        </div>
+        <div class="stat-cards" id="stats-sjf"><div class="stat-card"><div class="val" style="color:#0d9488">5.80</div><div class="lbl">Avg Wait Time</div></div><div class="stat-card"><div class="val" style="color:#0d9488">10.80</div><div class="lbl">Avg Turnaround</div></div><div class="stat-card"><div class="val" style="color:#0d9488">3.40</div><div class="lbl">Avg Response</div></div></div>
+        <table class="metrics-table">
+          <thead>
+            <tr><th>PID</th><th>AT</th><th>BT</th><th>CT</th><th>TAT</th><th>WT</th><th>RT</th></tr>
+          </thead>
+          <tbody id="results-sjf"><tr><td><span class="pid-badge" style="background:#3b82f6">P1</span></td><td>0</td><td>6</td><td>12</td><td>12</td><td>6</td><td>0</td></tr><tr><td><span class="pid-badge" style="background:#ef4444">P2</span></td><td>1</td><td>4</td><td>5</td><td>4</td><td>0</td><td>0</td></tr><tr><td><span class="pid-badge" style="background:#f59e0b">P3</span></td><td>2</td><td>8</td><td>25</td><td>23</td><td>15</td><td>15</td></tr><tr><td><span class="pid-badge" style="background:#10b981">P4</span></td><td>3</td><td>2</td><td>7</td><td>4</td><td>2</td><td>2</td></tr><tr><td><span class="pid-badge" style="background:#8b5cf6">P5</span></td><td>4</td><td>5</td><td>17</td><td>13</td><td>8</td><td>8</td></tr><tr class="avg-row"><td colspan="3" style="text-align:right; color:var(--text-secondary)">Average</td><td>—</td><td>10.80</td><td>5.80</td><td>3.40</td></tr></tbody>
+        </table>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <div class="section-icon icon-blue">5b</div>
+          <h2>Results — <span class="algo-sjf-np">SJF (Non-Pre)</span></h2>
+        </div>
+        <div class="stat-cards" id="stats-sjf-np"><div class="stat-card"><div class="val" style="color:#0284c7">6.20</div><div class="lbl">Avg Wait Time</div></div><div class="stat-card"><div class="val" style="color:#0284c7">11.20</div><div class="lbl">Avg Turnaround</div></div><div class="stat-card"><div class="val" style="color:#0284c7">6.20</div><div class="lbl">Avg Response</div></div></div>
+        <table class="metrics-table">
+          <thead>
+            <tr><th>PID</th><th>AT</th><th>BT</th><th>CT</th><th>TAT</th><th>WT</th><th>RT</th></tr>
+          </thead>
+          <tbody id="results-sjf-np"><tr><td><span class="pid-badge" style="background:#3b82f6">P1</span></td><td>0</td><td>6</td><td>6</td><td>6</td><td>0</td><td>0</td></tr><tr><td><span class="pid-badge" style="background:#ef4444">P2</span></td><td>1</td><td>4</td><td>12</td><td>11</td><td>7</td><td>7</td></tr><tr><td><span class="pid-badge" style="background:#f59e0b">P3</span></td><td>2</td><td>8</td><td>25</td><td>23</td><td>15</td><td>15</td></tr><tr><td><span class="pid-badge" style="background:#10b981">P4</span></td><td>3</td><td>2</td><td>8</td><td>5</td><td>3</td><td>3</td></tr><tr><td><span class="pid-badge" style="background:#8b5cf6">P5</span></td><td>4</td><td>5</td><td>17</td><td>13</td><td>8</td><td>8</td></tr><tr class="avg-row"><td colspan="3" style="text-align:right; color:var(--text-secondary)">Average</td><td>—</td><td>11.20</td><td>6.20</td><td>6.20</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="section-icon icon-purple">6</div>
+          <h2>Results — <span class="algo-pri">Priority</span></h2>
+        </div>
+        <div class="stat-cards" id="stats-pri"><div class="stat-card"><div class="val" style="color:#7c3aed">6.40</div><div class="lbl">Avg Wait Time</div></div><div class="stat-card"><div class="val" style="color:#7c3aed">11.40</div><div class="lbl">Avg Turnaround</div></div><div class="stat-card"><div class="val" style="color:#7c3aed">4.40</div><div class="lbl">Avg Response</div></div></div>
+        <table class="metrics-table">
+          <thead>
+            <tr><th>PID</th><th>AT</th><th>BT</th><th>Priority</th><th>CT</th><th>TAT</th><th>WT</th><th>RT</th></tr>
+          </thead>
+          <tbody id="results-pri"><tr><td><span class="pid-badge" style="background:#3b82f6">P1</span></td><td>0</td><td>6</td><td>3</td><td>12</td><td>12</td><td>6</td><td>0</td></tr><tr><td><span class="pid-badge" style="background:#ef4444">P2</span></td><td>1</td><td>4</td><td>1</td><td>5</td><td>4</td><td>0</td><td>0</td></tr><tr><td><span class="pid-badge" style="background:#f59e0b">P3</span></td><td>2</td><td>8</td><td>4</td><td>20</td><td>18</td><td>10</td><td>10</td></tr><tr><td><span class="pid-badge" style="background:#10b981">P4</span></td><td>3</td><td>2</td><td>2</td><td>7</td><td>4</td><td>2</td><td>2</td></tr><tr><td><span class="pid-badge" style="background:#8b5cf6">P5</span></td><td>4</td><td>5</td><td>5</td><td>25</td><td>21</td><td>16</td><td>16</td></tr><tr class="avg-row"><td colspan="4" style="text-align:right; color:var(--text-secondary)">Average</td><td>—</td><td>11.40</td><td>6.40</td><td>4.40</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-green">7</div>
+        <h2>Comparison Summary</h2>
+      </div>
+      <div class="comparison-grid">
+        <div class="compare-card sjf">
+          <h3>SJF (Preemptive)</h3>
+          <div id="compare-sjf"><div class="compare-row"><span class="metric-name">Avg Waiting Time</span><span class="metric-val">5.80</span></div><div class="compare-row"><span class="metric-name">Avg Turnaround Time</span><span class="metric-val">10.80</span></div><div class="compare-row"><span class="metric-name">Avg Response Time</span><span class="metric-val">3.40</span></div></div>
+        </div>
+        
+        <div class="compare-card sjf-np">
+          <h3>SJF (Non-Preemptive)</h3>
+          <div id="compare-sjf-np"><div class="compare-row"><span class="metric-name">Avg Waiting Time</span><span class="metric-val">6.20</span></div><div class="compare-row"><span class="metric-name">Avg Turnaround Time</span><span class="metric-val">11.20</span></div><div class="compare-row"><span class="metric-name">Avg Response Time</span><span class="metric-val">6.20</span></div></div>
+        </div>
+        <div class="compare-card pri">
+          <h3>Priority Scheduling (Preemptive)</h3>
+          <div id="compare-pri"><div class="compare-row"><span class="metric-name">Avg Waiting Time</span><span class="metric-val">6.40</span></div><div class="compare-row"><span class="metric-name">Avg Turnaround Time</span><span class="metric-val">11.40</span></div><div class="compare-row"><span class="metric-name">Avg Response Time</span><span class="metric-val">4.40</span></div></div>
+        </div>
+      </div>
+
+      <div class="section-divider" style="margin:1rem 0;"><span>Head-to-Head</span></div>
+
+      <table class="metrics-table" style="margin-bottom:1rem;">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th><span class="algo-sjf">SJF</span></th>
+            <th><span class="algo-sjf-np">SJF (NP)</span></th>
+            <th><span class="algo-pri">Priority</span></th>
+            <th>Winner</th>
+          </tr>
+        </thead>
+        <tbody id="head-to-head"><tr><td style="text-align:left; font-weight:600;">Avg Waiting Time</td><td>5.80</td><td>6.20</td><td>6.40</td><td><span class="algo-sjf">SJF(Pre)</span></td></tr><tr><td style="text-align:left; font-weight:600;">Avg Turnaround Time</td><td>10.80</td><td>11.20</td><td>11.40</td><td><span class="algo-sjf">SJF(Pre)</span></td></tr><tr><td style="text-align:left; font-weight:600;">Avg Response Time</td><td>3.40</td><td>6.20</td><td>4.40</td><td><span class="algo-sjf">SJF(Pre)</span></td></tr></tbody>
+      </table>
+
+      <div id="analysis-section">
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1rem; margin-top:1rem;">
+      <div class="alert alert-info" style="flex-direction:column; gap:0.3rem;">
+        <strong>SJF (Preemptive) Analysis</strong>
+        <p style="font-size:0.82rem; margin-top:0.25rem;">Always picks shortest remaining burst. Typically minimizes average wait time overall but causes many context switches.</p>
+      </div>
+      <div class="alert alert-info" style="flex-direction:column; gap:0.3rem; background:#f0f9ff; border-color:#bae6fd; color:#0369a1;">
+        <strong>SJF (Non-Preemptive) Analysis</strong>
+        <p style="font-size:0.82rem; margin-top:0.25rem;">Once a job starts, it finishes. Less context switching, but a short job arriving later must wait for a long running job.</p>
+      </div>
+      <div class="alert alert-info" style="flex-direction:column; gap:0.3rem; background:#faf5ff; border-color:#e9d5ff; color:#6d28d9;">
+        <strong>Priority Analysis</strong>
+        <p style="font-size:0.82rem; margin-top:0.25rem;">Favors low priority numbers. Can cause starvation for low priority tasks.</p>
+      </div>
+    </div>
+  </div>
+    </div>
+
+
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-red">8</div>
+        <h2>Final Conclusion</h2>
+      </div>
+      <div id="conclusion-box"><div class="conclusion-box"><h3>Conclusion &amp; Recommendation</h3><p>
+        Based on the simulation results:
+        <strong>SJF(Pre)</strong> achieved better average waiting time,
+        <strong>SJF(Pre)</strong> achieved better average turnaround time, and
+        <strong>SJF(Pre)</strong> had better average response time.
+        <br><br>
+        <strong>Efficiency vs. Urgency Trade-off:</strong> 
+        SJF algorithms focus on <em>overall efficiency</em> by selecting the shortest jobs to minimize average waiting times. 
+        In contrast, Priority scheduling focuses on <em>urgency</em> by ensuring critical tasks run first, even if it sacrifices overall system efficiency and increases the wait times for other processes. 
+        SJF(Preemptive) usually offers the lowest waiting time but adds overhead due to preemption, while SJF(Non-Preemptive) provides a balance with fewer context switches.
+      </p></div></div>
+    </div>
+
+  </div>
+</div>
+
+
+<script src="../../src/model/process.js"></script>
+<script src="../../src/model/ganttSegment.js"></script>
+<script src="../../src/model/schedulingResult.js"></script>
+<script src="../../src/js/validation.js"></script>
+<script src="../../src/js/sjfPreemptive.js"></script>
+<script src="../../src/js/sjfNonPreemptive.js"></script>
+<script src="../../src/js/priority.js"></script>
+<script src="../../src/js/metrics.js"></script>
+<script src="../../src/js/gantt.js"></script>
+<script src="../../src/js/comparison.js"></script>
+<script src="../../src/js/app.js"></script>
+
+<script>
+  window.onload = () => {
+    loadScenario('A');
+  };
+</script>
+
+</body>
+</html>
