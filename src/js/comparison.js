@@ -85,8 +85,10 @@ function renderConclusion(sjf, sjfNp, pri) {
         <strong>${betterTAT}</strong> achieved better average turnaround time, and
         <strong>${betterRT}</strong> had better average response time.
         <br><br>
-        <strong>Main Trade-off:</strong> SJF(Preemptive) often gives the lowest waiting time but has more overhead due to preemption. 
-        SJF(Non-Preemptive) provides a balance with fewer context switches. Priority Scheduling ensures urgent tasks run first but risks starving others.
+        <strong>Efficiency vs. Urgency Trade-off:</strong> 
+        SJF algorithms focus on <em>overall efficiency</em> by selecting the shortest jobs to minimize average waiting times. 
+        In contrast, Priority scheduling focuses on <em>urgency</em> by ensuring critical tasks run first, even if it sacrifices overall system efficiency and increases the wait times for other processes. 
+        SJF(Preemptive) usually offers the lowest waiting time but adds overhead due to preemption, while SJF(Non-Preemptive) provides a balance with fewer context switches.
       </p>
     </div>
   `;
