@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SJF (Pre, Non-Pre) vs Priority Scheduling Simulator</title>
+<style>
+  :root {
+    --primary: #1a1a2e;
+    --secondary: #16213e;
+    --accent: #0f3460;
+    --highlight: #e94560;
+    --highlight2: #0d9488;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --input-bg: #f8fafc;
+    --input-border: #cbd5e1;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --gantt-bg: #f1f5f9;
+    --sjf-color: #0d9488;
+    --sjf-np-color: #0284c7;
+    --pri-color: #7c3aed;
+    --p1: #3b82f6; --p2: #ef4444; --p3: #f59e0b; --p4: #10b981;
+    --p5: #8b5cf6; --p6: #ec4899; --p7: #06b6d4; --p8: #84cc16;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    min-height: 100vh;
+    color: var(--text-primary);
+  }
+  .header {
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    padding: 1.5rem 2rem;
+    border-bottom: 2px solid var(--highlight);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header h1 { color: #fff; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: #94a3b8; font-size: 0.85rem; margin-top: 0.25rem; }
+  .badge {
+    background: var(--highlight);
+    color: #fff;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .card-header h2 { font-size: 1rem; font-weight: 600; color: var(--text-primary); }
+  .section-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+  }
+  .icon-blue { background: #3b82f6; }
+  .icon-teal { background: var(--sjf-color); }
+  .icon-purple { background: var(--pri-color); }
+  .icon-orange { background: #f59e0b; }
+  .icon-green { background: #059669; }
+  .icon-red { background: #dc2626; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+  label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 0.3rem; }
+  input, select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    background: var(--input-bg);
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+  input.error { border-color: var(--danger); background: #fef2f2; }
+  .error-msg { color: var(--danger); font-size: 0.75rem; margin-top: 0.25rem; display: none; }
+  .btn {
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: #3b82f6; color: #fff; }
+  .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+  .btn-danger { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+  .btn-danger:hover { background: #fee2e2; }
+  .btn-success { background: #059669; color: #fff; }
+  .btn-success:hover { background: #047857; transform: translateY(-1px); }
+  .btn-warning { background: #f59e0b; color: #fff; }
+  .btn-warning:hover { background: #d97706; }
+  .btn-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+  .process-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .process-table th {
+    background: #f1f5f9;
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .process-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f1f5f9; color: var(--text-primary); }
+  .process-table tr:hover td { background: #f8fafc; }
+  .process-table .del-btn {
+    background: none; border: none; color: #dc2626;
+    cursor: pointer; font-size: 1rem; padding: 0.25rem;
+  }
+  .pid-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+  .gantt-wrap { overflow-x: auto; }
+  .gantt-container {
+    position: relative;
+    height: 80px;
+    background: var(--gantt-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    min-width: 400px;
+  }
+  .gantt-block {
+    position: absolute;
+    top: 12px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.3);
+  }
+  .gantt-idle {
+    background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 4px, #f1f5f9 4px, #f1f5f9 8px);
+  }
+  .gantt-times {
+    display: flex;
+    position: relative;
+    margin-top: 0.25rem;
+    height: 20px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    min-width: 400px;
+  }
+  .gantt-time-label { position: absolute; transform: translateX(-50%); }
+  .metrics-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  .metrics-table th {
+    background: #f8fafc;
+    padding: 0.6rem 0.75rem;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  .metrics-table td {
+    padding: 0.55rem 0.75rem;
+    text-align: center;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .metrics-table tr:hover td { background: #f8fafc; }
+  .metrics-table .avg-row td {
+    background: #f1f5f9;
+    font-weight: 700;
+    color: var(--text-primary);
+    border-top: 2px solid #e2e8f0;
+  }
+  .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+  .stat-card {
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    text-align: center;
+  }
+  .stat-card .val { font-size: 1.5rem; font-weight: 700; }
+  .stat-card .lbl { font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.25rem; }
+  .comparison-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+  .compare-card {
+    border-radius: 10px;
+    padding: 1rem;
+    border: 2px solid transparent;
+  }
+  .compare-card.sjf { background: #f0fdfa; border-color: var(--sjf-color); }
+  .compare-card.pri { background: #faf5ff; border-color: var(--pri-color); }
+  .compare-card.sjf-np { background: #f0f9ff; border-color: var(--sjf-np-color); }
+  .compare-card h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.75rem; }
+  .compare-card.sjf h3 { color: var(--sjf-color); }
+  .compare-card.pri h3 { color: var(--pri-color); }
+  .compare-card.sjf-np h3 { color: var(--sjf-np-color); }
+  .compare-row { display: flex; justify-content: space-between; padding: 0.35rem 0; border-bottom: 1px dashed #e2e8f0; font-size: 0.82rem; }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-row .metric-name { color: var(--text-secondary); }
+  .compare-row .metric-val { font-weight: 600; }
+  .winner-badge {
+    display: inline-block;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 20px;
+    margin-left: 0.5rem;
+  }
+  .alert {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .alert-danger { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+  .alert-info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+  .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+  .hidden { display: none !important; }
+  .section-divider {
+    text-align: center;
+    margin: 1.5rem 0;
+    position: relative;
+  }
+  .section-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0; right: 0;
+    border-top: 1px solid #e2e8f0;
+  }
+  .section-divider span {
+    position: relative;
+    background: white;
+    padding: 0 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .tab {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.83rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    background: var(--input-bg);
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+  .tab.active.sjf { background: #f0fdfa; border-color: var(--sjf-color); color: var(--sjf-color); }
+  .tab.active.pri { background: #faf5ff; border-color: var(--pri-color); color: var(--pri-color); }
+  .conclusion-box {
+    background: linear-gradient(135deg, #f0fdf4, #eff6ff);
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+  .conclusion-box h3 { font-size: 0.9rem; font-weight: 700; color: #166534; margin-bottom: 0.5rem; }
+  .conclusion-box p { font-size: 0.85rem; color: #374151; line-height: 1.7; }
+  .priority-note {
+    background: #fefce8;
+    border: 1px solid #fde047;
+    border-radius: 8px;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.8rem;
+    color: #713f12;
+    margin-bottom: 0.75rem;
+  }
+  .algo-label {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .algo-sjf { background: #ccfbf1; color: #065f46; }
+  .algo-pri { background: #ede9fe; color: #4c1d95; }
+  .algo-sjf-np { background: #e0f2fe; color: #0369a1; }
+  .ready-queue {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    padding: 0.5rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    min-height: 40px;
+    border: 1px dashed #cbd5e1;
+    margin-top: 0.5rem;
+  }
+  .queue-item {
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+  }
+  .preemption-badge {
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  @media (max-width: 900px) {
+    .grid-3, .comparison-grid { grid-template-columns: 1fr; }
+    .stat-cards { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>CPU Scheduling Simulator — C4</h1>
+    <p>SJF (Preemptive & Non-Preemptive) vs Priority Scheduling (Preemptive) Comparison</p>
+  </div>
+  <span class="badge">OS Project</span>
+</div>
+
+<div class="container">
+
+  <!-- INPUT PANEL -->
+  <div class="card">
+    <div class="card-header">
+      <div class="section-icon icon-blue">1</div>
+      <h2>Input Panel</h2>
+    </div>
+
+    <div class="priority-note">
+      Priority Rule: <strong>Lower number = Higher priority</strong> &nbsp;|&nbsp;
+      SJF(Pre) &amp; Priority are <strong>Preemptive</strong>; SJF(NP) is <strong>Non-Preemptive</strong> &nbsp;|&nbsp;
+      Tie-breaking: <strong>Arrival Time first, then Process ID</strong>
+    </div>
+
+    <div id="validation-error" class="alert alert-success">Loaded Scenario C: Simultaneous Arrival & Tie-Breaking</div>
+
+    <div style="display:grid; grid-template-columns: repeat(5,1fr) auto; gap:0.75rem; align-items:end;">
+      <div>
+        <label>Process ID</label>
+        <input type="text" id="inp-pid" placeholder="e.g. P1" maxlength="5">
+        <div class="error-msg" id="err-pid">Required / Duplicate ID</div>
+      </div>
+      <div>
+        <label>Arrival Time</label>
+        <input type="number" id="inp-at" placeholder="0" min="0">
+        <div class="error-msg" id="err-at">Must be ≥ 0</div>
+      </div>
+      <div>
+        <label>Burst Time</label>
+        <input type="number" id="inp-bt" placeholder="1" min="1">
+        <div class="error-msg" id="err-bt">Must be ≥ 1</div>
+      </div>
+      <div>
+        <label>Priority (1=highest)</label>
+        <input type="number" id="inp-pr" placeholder="1" min="1" max="10">
+        <div class="error-msg" id="err-pr">Must be 1–10</div>
+      </div>
+      <div>
+        <label>Color</label>
+        <select id="inp-color">
+          <option value="0">Auto</option>
+          <option value="1">Blue</option>
+          <option value="2">Red</option>
+          <option value="3">Amber</option>
+          <option value="4">Green</option>
+          <option value="5">Purple</option>
+          <option value="6">Pink</option>
+          <option value="7">Cyan</option>
+          <option value="8">Lime</option>
+        </select>
+      </div>
+      <div>
+        <button class="btn btn-primary" onclick="addProcess()">+ Add</button>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-warning" onclick="loadScenario('A')">Scenario A: Basic</button>
+      <button class="btn btn-warning" onclick="loadScenario('B')">Scenario B: Urgency vs. Eff.</button>
+      <button class="btn btn-warning" onclick="loadScenario('C')">Scenario C: Tie-Breaking</button>
+      <button class="btn btn-warning" onclick="loadScenario('D')">Scenario D: Validation Test</button>
+      <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+    </div>
+  </div>
+
+  <!-- PROCESS TABLE -->
+  <div class="card">
+    <div class="card-header">
+      <div class="section-icon icon-orange">2</div>
+      <h2>Process Table</h2>
+      <span style="margin-left:auto; font-size:0.8rem; color:var(--text-muted)" id="process-count">5 processes</span>
+    </div>
+    <div id="no-processes" class="alert alert-info hidden">No processes added yet. Use the input panel above or load a scenario.</div>
+    <div id="table-wrap" class="">
+      <table class="process-table">
+        <thead>
+          <tr>
+            <th>PID</th><th>Arrival</th><th>Burst</th><th>Priority</th><th>Remove</th>
+          </tr>
+        </thead>
+        <tbody id="process-tbody"><tr><td><span class="pid-badge" style="background:#3b82f6">P1</span></td><td>0</td><td>5</td><td><strong>4</strong></td><td><button class="del-btn" onclick="removeProcess(0)">&#x2715;</button></td></tr><tr><td><span class="pid-badge" style="background:#ef4444">P2</span></td><td>0</td><td>2</td><td><strong>2</strong></td><td><button class="del-btn" onclick="removeProcess(1)">&#x2715;</button></td></tr><tr><td><span class="pid-badge" style="background:#f59e0b">P3</span></td><td>0</td><td>8</td><td><strong>1</strong></td><td><button class="del-btn" onclick="removeProcess(2)">&#x2715;</button></td></tr><tr><td><span class="pid-badge" style="background:#10b981">P4</span></td><td>0</td><td>4</td><td><strong>5</strong></td><td><button class="del-btn" onclick="removeProcess(3)">&#x2715;</button></td></tr><tr><td><span class="pid-badge" style="background:#8b5cf6">P5</span></td><td>0</td><td>3</td><td><strong>3</strong></td><td><button class="del-btn" onclick="removeProcess(4)">&#x2715;</button></td></tr></tbody>
+      </table>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="runSimulation()" style="font-size:1rem; padding:0.65rem 2rem;">
+          ▶ Run Simulation
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-section" class="">
+
+    <!-- GANTT SJF -->
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-teal">3</div>
+        <h2>Gantt Chart — <span class="algo-sjf">SJF (Preemptive / SRTF)</span></h2>
+      </div>
+      <div class="gantt-wrap">
+        <div class="gantt-container" id="gantt-sjf" style="width:792px"><div class="gantt-block" title="P2: 0 &rarr; 2" style="left:0.00%;width:calc(9.09% - 2px);background:#ef4444">P2</div><div class="gantt-block" title="P5: 2 &rarr; 5" style="left:9.09%;width:calc(13.64% - 2px);background:#8b5cf6">P5</div><div class="gantt-block" title="P4: 5 &rarr; 9" style="left:22.73%;width:calc(18.18% - 2px);background:#10b981">P4</div><div class="gantt-block" title="P1: 9 &rarr; 14" style="left:40.91%;width:calc(22.73% - 2px);background:#3b82f6">P1</div><div class="gantt-block" title="P3: 14 &rarr; 22" style="left:63.64%;width:calc(36.36% - 2px);background:#f59e0b">P3</div></div>
+<div class="gantt-times" id="times-sjf" style="width:792px"><div class="gantt-time-label" style="left:0.00%">0</div><div class="gantt-time-label" style="left:9.09%">2</div><div class="gantt-time-label" style="left:22.73%">5</div><div class="gantt-time-label" style="left:40.91%">9</div><div class="gantt-time-label" style="left:63.64%">14</div><div class="gantt-time-label" style="left:100.00%">22</div></div>
+<div style="margin-top:0.75rem;"><span style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Execution order:</span><div class="ready-queue" id="exec-order-sjf"><span class="queue-item" style="background:#ef4444">P2</span><span class="queue-item" style="background:#8b5cf6">P5</span><span class="queue-item" style="background:#10b981">P4</span><span class="queue-item" style="background:#3b82f6">P1</span><span class="queue-item" style="background:#f59e0b">P3</span></div></div>
+      </div>
+    </div>
+
+    
+    <!-- GANTT SJF NP -->
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-blue">3b</div>
+        <h2>Gantt Chart — <span class="algo-sjf-np">SJF (Non-Preemptive)</span></h2>
+      </div>
+      <div class="gantt-wrap">
+        <div class="gantt-container" id="gantt-sjf-np" style="width:792px"><div class="gantt-block" title="P2: 0 &rarr; 2" style="left:0.00%;width:calc(9.09% - 2px);background:#ef4444">P2</div><div class="gantt-block" title="P5: 2 &rarr; 5" style="left:9.09%;width:calc(13.64% - 2px);background:#8b5cf6">P5</div><div class="gantt-block" title="P4: 5 &rarr; 9" style="left:22.73%;width:calc(18.18% - 2px);background:#10b981">P4</div><div class="gantt-block" title="P1: 9 &rarr; 14" style="left:40.91%;width:calc(22.73% - 2px);background:#3b82f6">P1</div><div class="gantt-block" title="P3: 14 &rarr; 22" style="left:63.64%;width:calc(36.36% - 2px);background:#f59e0b">P3</div></div>
+<div class="gantt-times" id="times-sjf-np" style="width:792px"><div class="gantt-time-label" style="left:0.00%">0</div><div class="gantt-time-label" style="left:9.09%">2</div><div class="gantt-time-label" style="left:22.73%">5</div><div class="gantt-time-label" style="left:40.91%">9</div><div class="gantt-time-label" style="left:63.64%">14</div><div class="gantt-time-label" style="left:100.00%">22</div></div>
+<div style="margin-top:0.75rem;"><span style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Execution order:</span><div class="ready-queue" id="exec-order-sjf-np"><span class="queue-item" style="background:#ef4444">P2</span><span class="queue-item" style="background:#8b5cf6">P5</span><span class="queue-item" style="background:#10b981">P4</span><span class="queue-item" style="background:#3b82f6">P1</span><span class="queue-item" style="background:#f59e0b">P3</span></div></div>
+      </div>
+    </div>
+
+    <!-- GANTT PRIORITY -->
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-purple">4</div>
+        <h2>Gantt Chart — <span class="algo-pri">Priority Scheduling (Preemptive)</span></h2>
+      </div>
+      <div class="gantt-wrap">
+        <div class="gantt-container" id="gantt-pri" style="width:792px"><div class="gantt-block" title="P3: 0 &rarr; 8" style="left:0.00%;width:calc(36.36% - 2px);background:#f59e0b">P3</div><div class="gantt-block" title="P2: 8 &rarr; 10" style="left:36.36%;width:calc(9.09% - 2px);background:#ef4444">P2</div><div class="gantt-block" title="P5: 10 &rarr; 13" style="left:45.45%;width:calc(13.64% - 2px);background:#8b5cf6">P5</div><div class="gantt-block" title="P1: 13 &rarr; 18" style="left:59.09%;width:calc(22.73% - 2px);background:#3b82f6">P1</div><div class="gantt-block" title="P4: 18 &rarr; 22" style="left:81.82%;width:calc(18.18% - 2px);background:#10b981">P4</div></div>
+<div class="gantt-times" id="times-pri" style="width:792px"><div class="gantt-time-label" style="left:0.00%">0</div><div class="gantt-time-label" style="left:36.36%">8</div><div class="gantt-time-label" style="left:45.45%">10</div><div class="gantt-time-label" style="left:59.09%">13</div><div class="gantt-time-label" style="left:81.82%">18</div><div class="gantt-time-label" style="left:100.00%">22</div></div>
+<div style="margin-top:0.75rem;"><span style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Execution order:</span><div class="ready-queue" id="exec-order-pri"><span class="queue-item" style="background:#f59e0b">P3</span><span class="queue-item" style="background:#ef4444">P2</span><span class="queue-item" style="background:#8b5cf6">P5</span><span class="queue-item" style="background:#3b82f6">P1</span><span class="queue-item" style="background:#10b981">P4</span></div></div>
+      </div>
+    </div>
+
+    <!-- RESULTS TABLES -->
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-header">
+          <div class="section-icon icon-teal">5</div>
+          <h2>Results — <span class="algo-sjf">SJF</span></h2>
+        </div>
+        <div class="stat-cards" id="stats-sjf"><div class="stat-card"><div class="val" style="color:#0d9488">6.00</div><div class="lbl">Avg Wait Time</div></div><div class="stat-card"><div class="val" style="color:#0d9488">10.40</div><div class="lbl">Avg Turnaround</div></div><div class="stat-card"><div class="val" style="color:#0d9488">6.00</div><div class="lbl">Avg Response</div></div></div>
+        <table class="metrics-table">
+          <thead>
+            <tr><th>PID</th><th>AT</th><th>BT</th><th>CT</th><th>TAT</th><th>WT</th><th>RT</th></tr>
+          </thead>
+          <tbody id="results-sjf"><tr><td><span class="pid-badge" style="background:#3b82f6">P1</span></td><td>0</td><td>5</td><td>14</td><td>14</td><td>9</td><td>9</td></tr><tr><td><span class="pid-badge" style="background:#ef4444">P2</span></td><td>0</td><td>2</td><td>2</td><td>2</td><td>0</td><td>0</td></tr><tr><td><span class="pid-badge" style="background:#f59e0b">P3</span></td><td>0</td><td>8</td><td>22</td><td>22</td><td>14</td><td>14</td></tr><tr><td><span class="pid-badge" style="background:#10b981">P4</span></td><td>0</td><td>4</td><td>9</td><td>9</td><td>5</td><td>5</td></tr><tr><td><span class="pid-badge" style="background:#8b5cf6">P5</span></td><td>0</td><td>3</td><td>5</td><td>5</td><td>2</td><td>2</td></tr><tr class="avg-row"><td colspan="3" style="text-align:right;color:var(--text-secondary)">Average</td><td>&mdash;</td><td>10.40</td><td>6.00</td><td>6.00</td></tr></tbody>
+        </table>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <div class="section-icon icon-blue">5b</div>
+          <h2>Results — <span class="algo-sjf-np">SJF (Non-Pre)</span></h2>
+        </div>
+        <div class="stat-cards" id="stats-sjf-np"><div class="stat-card"><div class="val" style="color:#0284c7">6.00</div><div class="lbl">Avg Wait Time</div></div><div class="stat-card"><div class="val" style="color:#0284c7">10.40</div><div class="lbl">Avg Turnaround</div></div><div class="stat-card"><div class="val" style="color:#0284c7">6.00</div><div class="lbl">Avg Response</div></div></div>
+        <table class="metrics-table">
+          <thead>
+            <tr><th>PID</th><th>AT</th><th>BT</th><th>CT</th><th>TAT</th><th>WT</th><th>RT</th></tr>
+          </thead>
+          <tbody id="results-sjf-np"><tr><td><span class="pid-badge" style="background:#3b82f6">P1</span></td><td>0</td><td>5</td><td>14</td><td>14</td><td>9</td><td>9</td></tr><tr><td><span class="pid-badge" style="background:#ef4444">P2</span></td><td>0</td><td>2</td><td>2</td><td>2</td><td>0</td><td>0</td></tr><tr><td><span class="pid-badge" style="background:#f59e0b">P3</span></td><td>0</td><td>8</td><td>22</td><td>22</td><td>14</td><td>14</td></tr><tr><td><span class="pid-badge" style="background:#10b981">P4</span></td><td>0</td><td>4</td><td>9</td><td>9</td><td>5</td><td>5</td></tr><tr><td><span class="pid-badge" style="background:#8b5cf6">P5</span></td><td>0</td><td>3</td><td>5</td><td>5</td><td>2</td><td>2</td></tr><tr class="avg-row"><td colspan="3" style="text-align:right;color:var(--text-secondary)">Average</td><td>&mdash;</td><td>10.40</td><td>6.00</td><td>6.00</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="section-icon icon-purple">6</div>
+          <h2>Results — <span class="algo-pri">Priority</span></h2>
+        </div>
+        <div class="stat-cards" id="stats-pri"><div class="stat-card"><div class="val" style="color:#7c3aed">9.80</div><div class="lbl">Avg Wait Time</div></div><div class="stat-card"><div class="val" style="color:#7c3aed">14.20</div><div class="lbl">Avg Turnaround</div></div><div class="stat-card"><div class="val" style="color:#7c3aed">9.80</div><div class="lbl">Avg Response</div></div></div>
+        <table class="metrics-table">
+          <thead>
+            <tr><th>PID</th><th>AT</th><th>BT</th><th>Priority</th><th>CT</th><th>TAT</th><th>WT</th><th>RT</th></tr>
+          </thead>
+          <tbody id="results-pri"><tr><td><span class="pid-badge" style="background:#3b82f6">P1</span></td><td>0</td><td>5</td><td>4</td><td>18</td><td>18</td><td>13</td><td>13</td></tr><tr><td><span class="pid-badge" style="background:#ef4444">P2</span></td><td>0</td><td>2</td><td>2</td><td>10</td><td>10</td><td>8</td><td>8</td></tr><tr><td><span class="pid-badge" style="background:#f59e0b">P3</span></td><td>0</td><td>8</td><td>1</td><td>8</td><td>8</td><td>0</td><td>0</td></tr><tr><td><span class="pid-badge" style="background:#10b981">P4</span></td><td>0</td><td>4</td><td>5</td><td>22</td><td>22</td><td>18</td><td>18</td></tr><tr><td><span class="pid-badge" style="background:#8b5cf6">P5</span></td><td>0</td><td>3</td><td>3</td><td>13</td><td>13</td><td>10</td><td>10</td></tr><tr class="avg-row"><td colspan="4" style="text-align:right;color:var(--text-secondary)">Average</td><td>&mdash;</td><td>14.20</td><td>9.80</td><td>9.80</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- COMPARISON SUMMARY -->
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-green">7</div>
+        <h2>Comparison Summary</h2>
+      </div>
+      <div class="comparison-grid">
+        <div class="compare-card sjf">
+          <h3>SJF (Preemptive)</h3>
+          <div id="compare-sjf"><div class="compare-row"><span class="metric-name">Avg Waiting Time</span><span class="metric-val">2.00</span></div><div class="compare-row"><span class="metric-name">Avg Turnaround Time</span><span class="metric-val">4.40</span></div><div class="compare-row"><span class="metric-name">Avg Response Time</span><span class="metric-val">2.00</span></div></div>
+        </div>
+        
+        <div class="compare-card sjf-np">
+          <h3>SJF (Non-Preemptive)</h3>
+          <div id="compare-sjf-np"><div class="compare-row"><span class="metric-name">Avg Waiting Time</span><span class="metric-val">2.00</span></div><div class="compare-row"><span class="metric-name">Avg Turnaround Time</span><span class="metric-val">4.40</span></div><div class="compare-row"><span class="metric-name">Avg Response Time</span><span class="metric-val">2.00</span></div></div>
+        </div>
+        <div class="compare-card pri">
+          <h3>Priority Scheduling (Preemptive)</h3>
+          <div id="compare-pri"><div class="compare-row"><span class="metric-name">Avg Waiting Time</span><span class="metric-val">2.00</span></div><div class="compare-row"><span class="metric-name">Avg Turnaround Time</span><span class="metric-val">4.40</span></div><div class="compare-row"><span class="metric-name">Avg Response Time</span><span class="metric-val">2.00</span></div></div>
+        </div>
+      </div>
+
+      <div class="section-divider" style="margin:1rem 0;"><span>Head-to-Head</span></div>
+
+      <table class="metrics-table" style="margin-bottom:1rem;">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th><span class="algo-sjf">SJF</span></th>
+            <th><span class="algo-sjf-np">SJF (NP)</span></th>
+            <th><span class="algo-pri">Priority</span></th>
+            <th>Winner</th>
+          </tr>
+        </thead>
+        <tbody id="head-to-head"><tr><td style="text-align:left;font-weight:600">Avg Waiting Time</td><td>6.00</td><td>6.00</td><td>9.80</td><td><span class="algo-sjf">SJF(Pre)</span>, <span class="algo-sjf-np">SJF(NP)</span></td></tr><tr><td style="text-align:left;font-weight:600">Avg Turnaround Time</td><td>10.40</td><td>10.40</td><td>14.20</td><td><span class="algo-sjf">SJF(Pre)</span>, <span class="algo-sjf-np">SJF(NP)</span></td></tr><tr><td style="text-align:left;font-weight:600">Avg Response Time</td><td>6.00</td><td>6.00</td><td>9.80</td><td><span class="algo-sjf">SJF(Pre)</span>, <span class="algo-sjf-np">SJF(NP)</span></td></tr></tbody>
+      </table>
+
+      <div id="analysis-section"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem;">
+  <div class="alert alert-info" style="flex-direction:column;gap:0.3rem;"><strong>SJF (Preemptive) Analysis</strong>
+  <p style="font-size:0.82rem;margin-top:0.25rem;">Always picks shortest remaining burst. Minimizes wait time but has many context switches.</p></div>
+  <div class="alert alert-info" style="flex-direction:column;gap:0.3rem;background:#f0f9ff;border-color:#bae6fd;color:#0369a1;"><strong>SJF (Non-Preemptive) Analysis</strong>
+  <p style="font-size:0.82rem;margin-top:0.25rem;">Once started a job runs to completion. Fewer context switches but short jobs arriving later wait for a running long job.</p></div>
+  <div class="alert alert-info" style="flex-direction:column;gap:0.3rem;background:#faf5ff;border-color:#e9d5ff;color:#6d28d9;"><strong>Priority Analysis</strong>
+  <p style="font-size:0.82rem;margin-top:0.25rem;">Favors lower priority numbers. Can cause starvation for low-priority tasks.</p></div>
+</div></div>
+    </div>
+
+    <!-- CONCLUSION -->
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-red">8</div>
+        <h2>Final Conclusion</h2>
+      </div>
+      <div id="conclusion-box"><div class="conclusion-box"><h3>Conclusion &amp; Recommendation</h3><p>
+        Based on the simulation: <strong>SJF(Pre) &amp; SJF(NP)</strong> achieved best average waiting time,
+        <strong>SJF(Pre) &amp; SJF(NP)</strong> achieved best average turnaround time, and
+        <strong>SJF(Pre) &amp; SJF(NP)</strong> had best average response time.<br><br>
+        <strong>Main Trade-off:</strong> SJF(Preemptive) minimizes wait time but causes many context switches.
+        SJF(Non-Preemptive) reduces context switches but a long job already running blocks newly arrived short jobs.
+        Priority ensures urgent tasks run first but risks starvation for low-priority processes.
+    </p></div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const COLORS = ['#3b82f6','#ef4444','#f59e0b','#10b981','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+let processes = [];
+let colorIdx = 0;
+
+function getColor(idx, customColor) {
+  if (customColor && customColor !== '0') return COLORS[parseInt(customColor)-1];
+  return COLORS[idx % COLORS.length];
+}
+
+function showError(fieldId, msgId, show) {
+  const f = document.getElementById(fieldId);
+  const m = document.getElementById(msgId);
+  if (show) { f.classList.add('error'); m.style.display='block'; }
+  else { f.classList.remove('error'); m.style.display='none'; }
+}
+
+function addProcess() {
+  const pid = document.getElementById('inp-pid').value.trim().toUpperCase();
+  const at = document.getElementById('inp-at').value;
+  const bt = document.getElementById('inp-bt').value;
+  const pr = document.getElementById('inp-pr').value;
+  const cl = document.getElementById('inp-color').value;
+
+  let valid = true;
+  if (!pid || processes.find(p => p.pid === pid)) { showError('inp-pid','err-pid',true); valid=false; } else showError('inp-pid','err-pid',false);
+  if (at === '' || isNaN(at) || parseInt(at) < 0) { showError('inp-at','err-at',true); valid=false; } else showError('inp-at','err-at',false);
+  if (!bt || isNaN(bt) || parseInt(bt) < 1) { showError('inp-bt','err-bt',true); valid=false; } else showError('inp-bt','err-bt',false);
+  if (!pr || isNaN(pr) || parseInt(pr) < 1 || parseInt(pr) > 10) { showError('inp-pr','err-pr',true); valid=false; } else showError('inp-pr','err-pr',false);
+
+  if (!valid) return;
+
+  const color = getColor(colorIdx, cl);
+  colorIdx++;
+  processes.push({ pid, at: parseInt(at), bt: parseInt(bt), pr: parseInt(pr), color });
+  renderProcessTable();
+  document.getElementById('inp-pid').value='';
+  document.getElementById('inp-at').value='';
+  document.getElementById('inp-bt').value='';
+  document.getElementById('inp-pr').value='';
+  document.getElementById('inp-color').value='0';
+  document.getElementById('inp-pid').focus();
+}
+
+function removeProcess(idx) {
+  processes.splice(idx,1);
+  renderProcessTable();
+}
+
+function renderProcessTable() {
+  const tbody = document.getElementById('process-tbody');
+  const noProc = document.getElementById('no-processes');
+  const tableWrap = document.getElementById('table-wrap');
+  const count = document.getElementById('process-count');
+  count.textContent = processes.length + ' process' + (processes.length !== 1 ? 'es' : '');
+
+  if (processes.length === 0) { noProc.classList.remove('hidden'); tableWrap.classList.add('hidden'); return; }
+  noProc.classList.add('hidden'); tableWrap.classList.remove('hidden');
+
+  tbody.innerHTML = processes.map((p,i) => `
+    <tr>
+      <td><span class="pid-badge" style="background:${p.color}">${p.pid}</span></td>
+      <td>${p.at}</td>
+      <td>${p.bt}</td>
+      <td><strong>${p.pr}</strong></td>
+      <td><button class="del-btn" onclick="removeProcess(${i})">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+function simulateSJF(procs) {
+  const n = procs.length;
+  const remaining = procs.map(p => p.bt);
+  const finished = new Array(n).fill(false);
+  const ct = new Array(n).fill(0);
+  const rt = new Array(n).fill(-1);
+  const timeline = [];
+  let time = 0;
+  let done = 0;
+  const total = procs.reduce((a,p)=>a+p.bt,0) + Math.max(...procs.map(p=>p.at));
+
+  while (done < n && time <= total + 100) {
+    const avail = procs.map((p,i) => (!finished[i] && p.at <= time) ? i : -1).filter(i=>i>=0);
+    if (avail.length === 0) { timeline.push({pid:'idle',start:time,end:time+1,color:'#e2e8f0'}); time++; continue; }
+    avail.sort((a,b) => remaining[a]-remaining[b] || procs[a].at-procs[b].at || procs[a].pid.localeCompare(procs[b].pid));
+    const cur = avail[0];
+    if (rt[cur] === -1) rt[cur] = time;
+    const prev = timeline[timeline.length-1];
+    if (prev && prev.pid === procs[cur].pid) prev.end = time+1;
+    else timeline.push({pid:procs[cur].pid, start:time, end:time+1, color:procs[cur].color});
+    remaining[cur]--;
+    time++;
+    if (remaining[cur] === 0) { finished[cur]=true; ct[cur]=time; done++; }
+  }
+
+  return procs.map((p,i) => ({
+    pid: p.pid, at: p.at, bt: p.bt, pr: p.pr, color: p.color,
+    ct: ct[i], tat: ct[i]-p.at, wt: ct[i]-p.at-p.bt, rt: rt[i]-p.at
+  })), timeline;
+}
+
+
+function simulateSJFNonPreemptive(procs) {
+  const n = procs.length;
+  const finished = new Array(n).fill(false);
+  const ct = new Array(n).fill(0);
+  const rt = new Array(n).fill(-1);
+  const timeline = [];
+  let time = 0;
+  let done = 0;
+  const maxTime = procs.reduce((a,p)=>a+p.bt,0) + Math.max(...procs.map(p=>p.at)) + 1;
+
+  while (done < n && time <= maxTime) {
+    const avail = procs.map((p,i) => (!finished[i] && p.at <= time) ? i : -1).filter(i=>i>=0);
+    if (avail.length === 0) {
+      const prev = timeline[timeline.length-1];
+      if (prev && prev.pid === 'idle') prev.end = time+1;
+      else timeline.push({pid:'idle',start:time,end:time+1,color:'#e2e8f0'});
+      time++; continue;
+    }
+    avail.sort((a,b) => procs[a].bt-procs[b].bt || procs[a].at-procs[b].at || procs[a].pid.localeCompare(procs[b].pid));
+    const cur = avail[0];
+    rt[cur] = time;
+    timeline.push({pid:procs[cur].pid, start:time, end:time+procs[cur].bt, color:procs[cur].color});
+    time += procs[cur].bt;
+    finished[cur] = true;
+    ct[cur] = time;
+    done++;
+  }
+
+  const results = procs.map((p,i) => ({
+    pid:p.pid, at:p.at, bt:p.bt, pr:p.pr, color:p.color,
+    ct:ct[i], tat:ct[i]-p.at, wt:ct[i]-p.at-p.bt, rt:rt[i]-p.at
+  }));
+  return [results, timeline];
+}
+
+function simulatePriority(procs) {
+  const n = procs.length;
+  const remaining = procs.map(p => p.bt);
+  const finished = new Array(n).fill(false);
+  const ct = new Array(n).fill(0);
+  const rt = new Array(n).fill(-1);
+  const timeline = [];
+  let time = 0;
+  let done = 0;
+  const total = procs.reduce((a,p)=>a+p.bt,0) + Math.max(...procs.map(p=>p.at));
+
+  while (done < n && time <= total + 100) {
+    const avail = procs.map((p,i) => (!finished[i] && p.at <= time) ? i : -1).filter(i=>i>=0);
+    if (avail.length === 0) { timeline.push({pid:'idle',start:time,end:time+1,color:'#e2e8f0'}); time++; continue; }
+    avail.sort((a,b) => procs[a].pr-procs[b].pr || procs[a].at-procs[b].at || procs[a].pid.localeCompare(procs[b].pid));
+    const cur = avail[0];
+    if (rt[cur] === -1) rt[cur] = time;
+    const prev = timeline[timeline.length-1];
+    if (prev && prev.pid === procs[cur].pid) prev.end = time+1;
+    else timeline.push({pid:procs[cur].pid, start:time, end:time+1, color:procs[cur].color});
+    remaining[cur]--;
+    time++;
+    if (remaining[cur] === 0) { finished[cur]=true; ct[cur]=time; done++; }
+  }
+
+  return procs.map((p,i) => ({
+    pid: p.pid, at: p.at, bt: p.bt, pr: p.pr, color: p.color,
+    ct: ct[i], tat: ct[i]-p.at, wt: ct[i]-p.at-p.bt, rt: rt[i]-p.at
+  })), timeline;
+}
+
+function runSimulation() {
+  if (processes.length < 2) {
+    const errDiv = document.getElementById('validation-error');
+    errDiv.textContent = 'Please add at least 2 processes to run the simulation.';
+    errDiv.classList.remove('hidden');
+    return;
+  }
+  document.getElementById('validation-error').classList.add('hidden');
+
+  const [sjfResults, sjfTimeline] = simulateSJF([...processes]);
+  const [sjfNpResults, sjfNpTimeline] = simulateSJFNonPreemptive([...processes]);
+  const [priResults, priTimeline] = simulatePriority([...processes]);
+
+  document.getElementById('results-section').classList.remove('hidden');
+
+  renderGantt('gantt-sjf', 'times-sjf', 'exec-order-sjf', sjfTimeline);
+  renderGantt('gantt-sjf-np', 'times-sjf-np', 'exec-order-sjf-np', sjfNpTimeline);
+  renderGantt('gantt-pri', 'times-pri', 'exec-order-pri', priTimeline);
+  renderResultsTable('results-sjf', sjfResults, false);
+  renderResultsTable('results-sjf-np', sjfNpResults, false);
+  renderResultsTable('results-pri', priResults, true);
+  renderStats('stats-sjf', sjfResults, '#0d9488');
+  renderStats('stats-sjf-np', sjfNpResults, '#0284c7');
+  renderStats('stats-pri', priResults, '#7c3aed');
+  renderComparison(sjfResults, sjfNpResults, priResults);
+  renderConclusion(sjfResults, sjfNpResults, priResults);
+
+  document.getElementById('results-section').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function renderGantt(containerId, timesId, orderId, timeline) {
+  const container = document.getElementById(containerId);
+  const timesEl = document.getElementById(timesId);
+  const orderEl = document.getElementById(orderId);
+
+  if (!timeline || timeline.length === 0) return;
+  const maxTime = timeline[timeline.length-1].end;
+  const minTime = timeline[0].start;
+  const span = maxTime - minTime;
+  const W = Math.max(600, span * 36);
+
+  container.style.width = W + 'px';
+  timesEl.style.width = W + 'px';
+
+  container.innerHTML = '';
+  timesEl.innerHTML = '';
+
+  timeline.forEach(block => {
+    const left = ((block.start - minTime) / span) * 100;
+    const width = ((block.end - block.start) / span) * 100;
+    const div = document.createElement('div');
+    div.className = 'gantt-block' + (block.pid === 'idle' ? ' gantt-idle' : '');
+    div.style.left = left + '%';
+    div.style.width = 'calc(' + width + '% - 2px)';
+    if (block.pid !== 'idle') {
+      div.style.background = block.color;
+      div.textContent = block.pid;
+      div.title = `${block.pid}: ${block.start} → ${block.end}`;
+    }
+    container.appendChild(div);
+  });
+
+  const times = new Set();
+  timeline.forEach(b => { times.add(b.start); times.add(b.end); });
+  [...times].sort((a,b)=>a-b).forEach(t => {
+    const label = document.createElement('div');
+    label.className = 'gantt-time-label';
+    label.style.left = ((t - minTime) / span * 100) + '%';
+    label.textContent = t;
+    timesEl.appendChild(label);
+  });
+
+  const seen = new Set();
+  const execOrder = timeline.filter(b => b.pid !== 'idle' && !seen.has(b.pid) && seen.add(b.pid));
+  orderEl.innerHTML = execOrder.map(b =>
+    `<span class="queue-item" style="background:${b.color}">${b.pid}</span>`
+  ).join('');
+}
+
+function renderResultsTable(tbodyId, results, showPriority) {
+  const tbody = document.getElementById(tbodyId);
+  const avgWT = (results.reduce((a,r)=>a+r.wt,0)/results.length).toFixed(2);
+  const avgTAT = (results.reduce((a,r)=>a+r.tat,0)/results.length).toFixed(2);
+  const avgRT = (results.reduce((a,r)=>a+r.rt,0)/results.length).toFixed(2);
+
+  tbody.innerHTML = results.map(r => `
+    <tr>
+      <td><span class="pid-badge" style="background:${r.color}">${r.pid}</span></td>
+      <td>${r.at}</td>
+      <td>${r.bt}</td>
+      ${showPriority ? `<td>${r.pr}</td>` : ''}
+      <td>${r.ct}</td>
+      <td>${r.tat}</td>
+      <td>${r.wt}</td>
+      <td>${r.rt}</td>
+    </tr>
+  `).join('') + `
+    <tr class="avg-row">
+      <td colspan="${showPriority?4:3}" style="text-align:right; color:var(--text-secondary)">Average</td>
+      <td>—</td>
+      <td>${avgTAT}</td>
+      <td>${avgWT}</td>
+      <td>${avgRT}</td>
+    </tr>
+  `;
+}
+
+function renderStats(containerId, results, color) {
+  const avgWT = (results.reduce((a,r)=>a+r.wt,0)/results.length).toFixed(2);
+  const avgTAT = (results.reduce((a,r)=>a+r.tat,0)/results.length).toFixed(2);
+  const avgRT = (results.reduce((a,r)=>a+r.rt,0)/results.length).toFixed(2);
+  document.getElementById(containerId).innerHTML = `
+    <div class="stat-card"><div class="val" style="color:${color}">${avgWT}</div><div class="lbl">Avg Wait Time</div></div>
+    <div class="stat-card"><div class="val" style="color:${color}">${avgTAT}</div><div class="lbl">Avg Turnaround</div></div>
+    <div class="stat-card"><div class="val" style="color:${color}">${avgRT}</div><div class="lbl">Avg Response</div></div>
+  `;
+}
+
+
+function renderComparison(sjf, sjfNp, pri) {
+  const avg = r => ({
+    wt: (r.reduce((a,x)=>a+x.wt,0)/r.length).toFixed(2),
+    tat: (r.reduce((a,x)=>a+x.tat,0)/r.length).toFixed(2),
+    rt: (r.reduce((a,x)=>a+x.rt,0)/r.length).toFixed(2)
+  });
+  const s = avg(sjf), sn = avg(sjfNp), p = avg(pri);
+
+  const rows = [
+    ['Avg Waiting Time', s.wt, sn.wt, p.wt],
+    ['Avg Turnaround Time', s.tat, sn.tat, p.tat],
+    ['Avg Response Time', s.rt, sn.rt, p.rt]
+  ];
+
+  document.getElementById('compare-sjf').innerHTML = rows.map(r => `
+    <div class="compare-row"><span class="metric-name">${r[0]}</span><span class="metric-val">${r[1]}</span></div>`).join('');
+    
+  document.getElementById('compare-sjf-np').innerHTML = rows.map(r => `
+    <div class="compare-row"><span class="metric-name">${r[0]}</span><span class="metric-val">${r[2]}</span></div>`).join('');
+
+  document.getElementById('compare-pri').innerHTML = rows.map(r => `
+    <div class="compare-row"><span class="metric-name">${r[0]}</span><span class="metric-val">${r[3]}</span></div>`).join('');
+
+  document.getElementById('head-to-head').innerHTML = rows.map(r => {
+    const sv = parseFloat(r[1]), snv = parseFloat(r[2]), pv = parseFloat(r[3]);
+    const minVal = Math.min(sv, snv, pv);
+    let winner = [];
+    if (sv === minVal) winner.push('<span class="algo-sjf">SJF(Pre)</span>');
+    if (snv === minVal) winner.push('<span class="algo-sjf-np">SJF(NP)</span>');
+    if (pv === minVal) winner.push('<span class="algo-pri">Priority</span>');
+    return `<tr>
+      <td style="text-align:left; font-weight:600;">${r[0]}</td>
+      <td>${r[1]}</td>
+      <td>${r[2]}</td>
+      <td>${r[3]}</td>
+      <td>${winner.join(', ')}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('analysis-section').innerHTML = `
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1rem; margin-top:1rem;">
+      <div class="alert alert-info" style="flex-direction:column; gap:0.3rem;">
+        <strong>SJF (Preemptive) Analysis</strong>
+        <p style="font-size:0.82rem; margin-top:0.25rem;">Always picks shortest remaining burst. Typically minimizes average wait time overall but causes many context switches.</p>
+      </div>
+      <div class="alert alert-info" style="flex-direction:column; gap:0.3rem; background:#f0f9ff; border-color:#bae6fd; color:#0369a1;">
+        <strong>SJF (Non-Preemptive) Analysis</strong>
+        <p style="font-size:0.82rem; margin-top:0.25rem;">Once a job starts, it finishes. Less context switching, but a short job arriving later must wait for a long running job.</p>
+      </div>
+      <div class="alert alert-info" style="flex-direction:column; gap:0.3rem; background:#faf5ff; border-color:#e9d5ff; color:#6d28d9;">
+        <strong>Priority Analysis</strong>
+        <p style="font-size:0.82rem; margin-top:0.25rem;">Favors low priority numbers. Can cause starvation for low priority tasks.</p>
+      </div>
+    </div>
+  `;
+}
+
+
+
+function renderConclusion(sjf, sjfNp, pri) {
+  const avg = r => ({
+    wt: r.reduce((a,x)=>a+x.wt,0)/r.length,
+    tat: r.reduce((a,x)=>a+x.tat,0)/r.length,
+    rt: r.reduce((a,x)=>a+x.rt,0)/r.length
+  });
+  const s = avg(sjf), sn = avg(sjfNp), p = avg(pri);
+  
+  const getBest = (v1, v2, v3, n1, n2, n3) => {
+    let min = Math.min(v1, v2, v3);
+    let best = [];
+    if (v1 === min) best.push(n1);
+    if (v2 === min) best.push(n2);
+    if (v3 === min) best.push(n3);
+    return best.join(' & ');
+  };
+  
+  const betterWT = getBest(s.wt, sn.wt, p.wt, 'SJF(Pre)', 'SJF(NP)', 'Priority');
+  const betterTAT = getBest(s.tat, sn.tat, p.tat, 'SJF(Pre)', 'SJF(NP)', 'Priority');
+  const betterRT = getBest(s.rt, sn.rt, p.rt, 'SJF(Pre)', 'SJF(NP)', 'Priority');
+
+  document.getElementById('conclusion-box').innerHTML = `
+    <div class="conclusion-box">
+      <h3>Conclusion & Recommendation</h3>
+      <p>
+        Based on the simulation results:
+        <strong>${betterWT}</strong> achieved better average waiting time,
+        <strong>${betterTAT}</strong> achieved better average turnaround time, and
+        <strong>${betterRT}</strong> had better average response time.
+        <br><br>
+        <strong>Main Trade-off:</strong> SJF(Preemptive) often gives the lowest waiting time but has more overhead due to preemption. 
+        SJF(Non-Preemptive) provides a balance with fewer context switches. Priority Scheduling ensures urgent tasks run first but risks starving others.
+      </p>
+    </div>
+  `;
+}
+
+
+function clearAll() {
+  processes = [];
+  colorIdx = 0;
+  renderProcessTable();
+  document.getElementById('results-section').classList.add('hidden');
+  document.getElementById('validation-error').classList.add('hidden');
+}
+
+function loadScenario(s) {
+  clearAll();
+  const scenarios = {
+    A: [
+      {pid:'P1',at:0,bt:6,pr:3},{pid:'P2',at:1,bt:4,pr:1},{pid:'P3',at:2,bt:8,pr:4},
+      {pid:'P4',at:3,bt:2,pr:2},{pid:'P5',at:4,bt:5,pr:5}
+    ],
+    B: [
+      {pid:'P1',at:0,bt:10,pr:1},{pid:'P2',at:1,bt:2,pr:5},{pid:'P3',at:2,bt:3,pr:4},
+      {pid:'P4',at:3,bt:1,pr:3},{pid:'P5',at:4,bt:4,pr:2}
+    ],
+    C: [
+      {pid:'P1',at:0,bt:5,pr:4},{pid:'P2',at:0,bt:2,pr:2},{pid:'P3',at:0,bt:8,pr:1},
+      {pid:'P4',at:0,bt:4,pr:5},{pid:'P5',at:0,bt:3,pr:3}
+    ],
+    D: null
+  };
+
+  if (s === 'D') {
+    document.getElementById('inp-pid').value = 'P1';
+    document.getElementById('inp-at').value = '-1';
+    document.getElementById('inp-bt').value = '0';
+    document.getElementById('inp-pr').value = '15';
+    document.getElementById('validation-error').textContent =
+      'Scenario D — Validation Test: Try clicking "+ Add" with the pre-filled invalid values. The simulator will reject them.';
+    document.getElementById('validation-error').className = 'alert alert-info';
+    document.getElementById('validation-error').classList.remove('hidden');
+    return;
+  }
+
+  scenarios[s].forEach((p, i) => {
+    processes.push({...p, color: COLORS[i % COLORS.length]});
+    colorIdx++;
+  });
+  renderProcessTable();
+
+  const names = {A:'Basic Mixed Workload',B:'Urgency vs. Efficiency',C:'Simultaneous Arrival & Tie-Breaking'};
+  document.getElementById('validation-error').textContent = `Loaded Scenario ${s}: ${names[s]}`;
+  document.getElementById('validation-error').className = 'alert alert-success';
+  document.getElementById('validation-error').classList.remove('hidden');
+}
+
+function simulateSJF(procs) {
+  const n = procs.length;
+  const remaining = procs.map(p => p.bt);
+  const finished = new Array(n).fill(false);
+  const ct = new Array(n).fill(0);
+  const rt = new Array(n).fill(-1);
+  const timeline = [];
+  let time = 0;
+  let done = 0;
+  const maxTime = procs.reduce((a,p)=>a+p.bt,0) + Math.max(...procs.map(p=>p.at)) + 1;
+
+  while (done < n && time <= maxTime) {
+    const avail = procs.map((p,i) => (!finished[i] && p.at <= time) ? i : -1).filter(i=>i>=0);
+    if (avail.length === 0) {
+      const prev = timeline[timeline.length-1];
+      if (prev && prev.pid === 'idle') prev.end = time+1;
+      else timeline.push({pid:'idle',start:time,end:time+1,color:'#e2e8f0'});
+      time++; continue;
+    }
+    avail.sort((a,b) => remaining[a]-remaining[b] || procs[a].at-procs[b].at || procs[a].pid.localeCompare(procs[b].pid));
+    const cur = avail[0];
+    if (rt[cur] === -1) rt[cur] = time;
+    const prev = timeline[timeline.length-1];
+    if (prev && prev.pid === procs[cur].pid) prev.end = time+1;
+    else timeline.push({pid:procs[cur].pid, start:time, end:time+1, color:procs[cur].color});
+    remaining[cur]--;
+    time++;
+    if (remaining[cur] === 0) { finished[cur]=true; ct[cur]=time; done++; }
+  }
+
+  const results = procs.map((p,i) => ({
+    pid:p.pid, at:p.at, bt:p.bt, pr:p.pr, color:p.color,
+    ct:ct[i], tat:ct[i]-p.at, wt:ct[i]-p.at-p.bt, rt:rt[i]-p.at
+  }));
+  return [results, timeline];
+}
+
+
+
+function simulatePriority(procs) {
+  const n = procs.length;
+  const remaining = procs.map(p => p.bt);
+  const finished = new Array(n).fill(false);
+  const ct = new Array(n).fill(0);
+  const rt = new Array(n).fill(-1);
+  const timeline = [];
+  let time = 0;
+  let done = 0;
+  const maxTime = procs.reduce((a,p)=>a+p.bt,0) + Math.max(...procs.map(p=>p.at)) + 1;
+
+  while (done < n && time <= maxTime) {
+    const avail = procs.map((p,i) => (!finished[i] && p.at <= time) ? i : -1).filter(i=>i>=0);
+    if (avail.length === 0) {
+      const prev = timeline[timeline.length-1];
+      if (prev && prev.pid === 'idle') prev.end = time+1;
+      else timeline.push({pid:'idle',start:time,end:time+1,color:'#e2e8f0'});
+      time++; continue;
+    }
+    avail.sort((a,b) => procs[a].pr-procs[b].pr || procs[a].at-procs[b].at || procs[a].pid.localeCompare(procs[b].pid));
+    const cur = avail[0];
+    if (rt[cur] === -1) rt[cur] = time;
+    const prev = timeline[timeline.length-1];
+    if (prev && prev.pid === procs[cur].pid) prev.end = time+1;
+    else timeline.push({pid:procs[cur].pid, start:time, end:time+1, color:procs[cur].color});
+    remaining[cur]--;
+    time++;
+    if (remaining[cur] === 0) { finished[cur]=true; ct[cur]=time; done++; }
+  }
+
+  const results = procs.map((p,i) => ({
+    pid:p.pid, at:p.at, bt:p.bt, pr:p.pr, color:p.color,
+    ct:ct[i], tat:ct[i]-p.at, wt:ct[i]-p.at-p.bt, rt:rt[i]-p.at
+  }));
+  return [results, timeline];
+}
+</script>
+</body>
+</html>

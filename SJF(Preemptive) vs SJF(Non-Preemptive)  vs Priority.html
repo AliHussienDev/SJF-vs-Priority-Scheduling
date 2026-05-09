@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SJF (Pre, Non-Pre) vs Priority Scheduling Simulator</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>CPU Scheduling Simulator — C4</h1>
+    <p>SJF (Preemptive & Non-Preemptive) vs Priority Scheduling (Preemptive) Comparison</p>
+  </div>
+  <span class="badge">OS Project</span>
+</div>
+
+<div class="container">
+
+  <!-- INPUT PANEL -->
+  <div class="card">
+    <div class="card-header">
+      <div class="section-icon icon-blue">1</div>
+      <h2>Input Panel</h2>
+    </div>
+
+    <div class="priority-note">
+      Priority Rule: <strong>Lower number = Higher priority</strong> &nbsp;|&nbsp;
+      SJF(Pre) &amp; Priority are <strong>Preemptive</strong>; SJF(NP) is <strong>Non-Preemptive</strong> &nbsp;|&nbsp;
+      Tie-breaking: <strong>Arrival Time first, then Process ID</strong>
+    </div>
+
+    <div id="validation-error" class="alert alert-danger hidden"></div>
+
+    <div style="display:grid; grid-template-columns: repeat(5,1fr) auto; gap:0.75rem; align-items:end;">
+      <div>
+        <label>Process ID</label>
+        <input type="text" id="inp-pid" placeholder="e.g. P1" maxlength="5">
+        <div class="error-msg" id="err-pid">Required / Duplicate ID</div>
+      </div>
+      <div>
+        <label>Arrival Time</label>
+        <input type="number" id="inp-at" placeholder="0" min="0">
+        <div class="error-msg" id="err-at">Must be ≥ 0</div>
+      </div>
+      <div>
+        <label>Burst Time</label>
+        <input type="number" id="inp-bt" placeholder="1" min="1">
+        <div class="error-msg" id="err-bt">Must be ≥ 1</div>
+      </div>
+      <div>
+        <label>Priority (1=highest)</label>
+        <input type="number" id="inp-pr" placeholder="1" min="1" max="10">
+        <div class="error-msg" id="err-pr">Must be 1–10</div>
+      </div>
+      <div>
+        <label>Color</label>
+        <select id="inp-color">
+          <option value="0">Auto</option>
+          <option value="1">Blue</option>
+          <option value="2">Red</option>
+          <option value="3">Amber</option>
+          <option value="4">Green</option>
+          <option value="5">Purple</option>
+          <option value="6">Pink</option>
+          <option value="7">Cyan</option>
+          <option value="8">Lime</option>
+        </select>
+      </div>
+      <div>
+        <button class="btn btn-primary" onclick="addProcess()">+ Add</button>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-warning" onclick="loadScenario('A')">Scenario A: Basic</button>
+      <button class="btn btn-warning" onclick="loadScenario('B')">Scenario B: Conflict</button>
+      <button class="btn btn-warning" onclick="loadScenario('C')">Scenario C: Simultaneous Arrival</button>
+      <button class="btn btn-warning" onclick="loadScenario('D')">Scenario D: Validation Test</button>
+      <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+    </div>
+  </div>
+
+  <!-- PROCESS TABLE -->
+  <div class="card">
+    <div class="card-header">
+      <div class="section-icon icon-orange">2</div>
+      <h2>Process Table</h2>
+      <span style="margin-left:auto; font-size:0.8rem; color:var(--text-muted)" id="process-count">0 processes</span>
+    </div>
+    <div id="no-processes" class="alert alert-info">No processes added yet. Use the input panel above or load a scenario.</div>
+    <div id="table-wrap" class="hidden">
+      <table class="process-table">
+        <thead>
+          <tr>
+            <th>PID</th><th>Arrival</th><th>Burst</th><th>Priority</th><th>Remove</th>
+          </tr>
+        </thead>
+        <tbody id="process-tbody"></tbody>
+      </table>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="runSimulation()" style="font-size:1rem; padding:0.65rem 2rem;">
+          ▶ Run Simulation
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-section" class="hidden">
+
+    <!-- GANTT SJF -->
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-teal">3</div>
+        <h2>Gantt Chart — <span class="algo-sjf">SJF (Preemptive / SRTF)</span></h2>
+      </div>
+      <div class="gantt-wrap">
+        <div class="gantt-container" id="gantt-sjf"></div>
+        <div class="gantt-times" id="times-sjf"></div>
+      </div>
+      <div style="margin-top:0.75rem;">
+        <span style="font-size:0.8rem; color:var(--text-secondary); font-weight:600;">Execution order:</span>
+        <div class="ready-queue" id="exec-order-sjf"></div>
+      </div>
+    </div>
+
+    <!-- GANTT SJF NP -->
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-blue">3b</div>
+        <h2>Gantt Chart — <span class="algo-sjf-np">SJF (Non-Preemptive)</span></h2>
+      </div>
+      <div class="gantt-wrap">
+        <div class="gantt-container" id="gantt-sjf-np"></div>
+        <div class="gantt-times" id="times-sjf-np"></div>
+      </div>
+      <div style="margin-top:0.75rem;">
+        <span style="font-size:0.8rem; color:var(--text-secondary); font-weight:600;">Execution order:</span>
+        <div class="ready-queue" id="exec-order-sjf-np"></div>
+      </div>
+    </div>
+
+    <!-- GANTT PRIORITY -->
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-purple">4</div>
+        <h2>Gantt Chart — <span class="algo-pri">Priority Scheduling (Preemptive)</span></h2>
+      </div>
+      <div class="gantt-wrap">
+        <div class="gantt-container" id="gantt-pri"></div>
+        <div class="gantt-times" id="times-pri"></div>
+      </div>
+      <div style="margin-top:0.75rem;">
+        <span style="font-size:0.8rem; color:var(--text-secondary); font-weight:600;">Execution order:</span>
+        <div class="ready-queue" id="exec-order-pri"></div>
+      </div>
+    </div>
+
+    <!-- RESULTS TABLES -->
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-header">
+          <div class="section-icon icon-teal">5</div>
+          <h2>Results — <span class="algo-sjf">SJF</span></h2>
+        </div>
+        <div class="stat-cards" id="stats-sjf"></div>
+        <table class="metrics-table">
+          <thead>
+            <tr><th>PID</th><th>AT</th><th>BT</th><th>CT</th><th>TAT</th><th>WT</th><th>RT</th></tr>
+          </thead>
+          <tbody id="results-sjf"></tbody>
+        </table>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <div class="section-icon icon-blue">5b</div>
+          <h2>Results — <span class="algo-sjf-np">SJF (Non-Pre)</span></h2>
+        </div>
+        <div class="stat-cards" id="stats-sjf-np"></div>
+        <table class="metrics-table">
+          <thead>
+            <tr><th>PID</th><th>AT</th><th>BT</th><th>CT</th><th>TAT</th><th>WT</th><th>RT</th></tr>
+          </thead>
+          <tbody id="results-sjf-np"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="section-icon icon-purple">6</div>
+          <h2>Results — <span class="algo-pri">Priority</span></h2>
+        </div>
+        <div class="stat-cards" id="stats-pri"></div>
+        <table class="metrics-table">
+          <thead>
+            <tr><th>PID</th><th>AT</th><th>BT</th><th>Priority</th><th>CT</th><th>TAT</th><th>WT</th><th>RT</th></tr>
+          </thead>
+          <tbody id="results-pri"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- COMPARISON SUMMARY -->
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-green">7</div>
+        <h2>Comparison Summary</h2>
+      </div>
+      <div class="comparison-grid">
+        <div class="compare-card sjf">
+          <h3>SJF (Preemptive)</h3>
+          <div id="compare-sjf"></div>
+        </div>
+        
+        <div class="compare-card sjf-np">
+          <h3>SJF (Non-Preemptive)</h3>
+          <div id="compare-sjf-np"></div>
+        </div>
+        <div class="compare-card pri">
+          <h3>Priority Scheduling (Preemptive)</h3>
+          <div id="compare-pri"></div>
+        </div>
+      </div>
+
+      <div class="section-divider" style="margin:1rem 0;"><span>Head-to-Head</span></div>
+
+      <table class="metrics-table" style="margin-bottom:1rem;">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th><span class="algo-sjf">SJF</span></th>
+            <th><span class="algo-sjf-np">SJF (NP)</span></th>
+            <th><span class="algo-pri">Priority</span></th>
+            <th>Winner</th>
+          </tr>
+        </thead>
+        <tbody id="head-to-head"></tbody>
+      </table>
+
+      <div id="analysis-section"></div>
+    </div>
+
+    <!-- CONCLUSION -->
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon icon-red">8</div>
+        <h2>Final Conclusion</h2>
+      </div>
+      <div id="conclusion-box"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="model/process.js"></script>
+<script src="model/ganttSegment.js"></script>
+<script src="model/schedulingResult.js"></script>
+<script src="js/validation.js"></script>
+<script src="js/gantt.js"></script>
+<script src="js/metrics.js"></script>
+<script src="js/comparison.js"></script>
+<script src="js/sjfPreemptive.js"></script>
+<script src="js/sjfNonPreemptive.js"></script>
+<script src="js/priority.js"></script>
+<script src="js/roundRobin.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
